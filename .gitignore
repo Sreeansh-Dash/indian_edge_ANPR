@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment
+venv/
+env/
+ENV/
+.env
+.venv
+
+# Datasets (Prevent uploading heavy images and XMLs)
+data/
+license_plates/
+
+# PyTorch / Models
+*.pt
+*.pth
+*.onnx
+
+# Ultralytics runs directory
+runs/
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

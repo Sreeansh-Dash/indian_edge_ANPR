@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuralPlate | Edge ANPR System</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons for premium UI icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="background-effects">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-container">
+                <i class="ph-fill ph-car-profile logo-icon"></i>
+                <h1>Neural<span class="highlight">Plate</span></h1>
+            </div>
+
+            <nav class="controls">
+                <div class="control-group">
+                    <label>Dashboard Views</label>
+                    <div class="nav-menu">
+                        <button class="nav-btn active" data-view="inference">
+                            <i class="ph ph-scan"></i> Live Inference
+                        </button>
+                        <button class="nav-btn" data-view="analytics">
+                            <i class="ph ph-chart-line-up"></i> Model Analytics
+                        </button>
+                    </div>
+                </div>
+
+                <div id="inference-controls" class="view-controls active-controls">
+                    <div class="control-group">
+                        <label>Input Source</label>
+                        <div class="tabs">
+                            <button class="tab active" data-source="image"><i class="ph ph-image"></i> Image</button>
+                            <button class="tab" data-source="camera"><i class="ph ph-camera"></i> Camera</button>
+                        </div>
+                    </div>
+
+                    <div id="image-controls" class="control-section active-control">
+                        <div class="upload-zone" id="upload-zone">
+                            <input type="file" id="image-upload" accept="image/*" hidden>
+                            <i class="ph ph-upload-simple upload-icon"></i>
+                            <p>Drop image here or click to browse</p>
+                            <span class="upload-sub">Supports JPG, PNG</span>
+                        </div>
+                    </div>
+
+                    <div id="camera-controls" class="control-section">
+                        <button class="action-btn" id="start-camera"><i class="ph ph-video-camera"></i> Start
+                            Stream</button>
+                        <button class="action-btn secondary" id="stop-camera" disabled><i class="ph ph-stop-circle"></i>
+                            Stop Stream</button>
+                    </div>
+                </div>
+
+                <div class="status-indicator">
+                    <div class="status-dot online"></div>
+                    <span id="api-status">System Online</span>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content Workspace -->
+        <main class="workspace">
+            <header class="top-nav">
+                <h2>Workspace</h2>
+                <div class="badges">
+                    <span class="badge ai-badge"><i class="ph-fill ph-lightning"></i> YOLOv8-nano EDGE</span>
+                    <span class="badge ocr-badge"><i class="ph-fill ph-text-aa"></i> EasyOCR Engine</span>
+                </div>
+            </header>
+
+            <!-- Inference View -->
+            <div id="view-inference" class="view-panel active-view">
+                <div class="dashboard-grid">
+                    <!-- Viewer Panel -->
+                    <div class="panel viewer-panel">
+                        <div class="panel-header">
+                            <div class="header-title">
+                                <i class="ph ph-eye"></i>
+                                <h3>Visualizer</h3>
+                            </div>
+                            <span class="latency" id="latency-display"><i class="ph ph-clock"></i> 0 ms</span>
+                        </div>
+                        <div class="feed-container">
+                            <canvas id="visualizer-canvas"></canvas>
+                            <video id="camera-video" autoplay playsinline muted hidden></video>
+                            <div class="placeholder-content" id="viewer-placeholder">
+                                <i class="ph ph-radar"></i>
+                                <p>Awaiting Input Source</p>
+                                <span>Upload an image or start a stream</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Panel -->
+                    <div class="panel results-panel">
+                        <div class="panel-header">
+                            <div class="header-title">
+                                <i class="ph ph-list-magnifying-glass"></i>
+                                <h3>Detections</h3>
+                            </div>
+                            <span class="count-badge" id="detection-count">0</span>
+                        </div>
+
+                        <div class="results-list" id="results-list">
+                            <div class="empty-state">
+                                <i class="ph ph-car"></i>
+                                <p>No vehicles detected yet</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics View -->
+            <div id="view-analytics" class="view-panel">
+                <div class="analytics-wrapper">
+                    <div class="panel analytics-panel">
+                        <div class="panel-header">
+                            <div class="header-title">
+                                <i class="ph ph-trend-up"></i>
+                                <h3>Training Metrics (YOLOv8)</h3>
+                            </div>
+                            <button class="refresh-btn" onclick="refreshCharts()" title="Refresh Charts"><i
+                                    class="ph ph-arrows-clockwise"></i> Refresh</button>
+                        </div>
+                        <div class="charts-grid">
+                            <div class="chart-card">
+                                <div class="chart-header">
+                                    <h4>Performance Curves</h4>
+                                    <span>Loss, mAP, Precision, Recall</span>
+                                </div>
+                                <div class="chart-img-container">
+                                    <img src="http://127.0.0.1:8000/charts/training_metrics.png" alt="Training Metrics"
+                                        id="chart-metrics"
+                                        onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'chart-error\'><i class=\'ph ph-warning-circle\'></i><p>Training charts not available yet.</p></div>';">
+                                </div>
+                            </div>
+                            <div class="chart-card">
+                                <div class="chart-header">
+                                    <h4>Confusion Matrix</h4>
+                                    <span>Classification Accuracy</span>
+                                </div>
+                                <div class="chart-img-container">
+                                    <img src="http://127.0.0.1:8000/charts/confusion_matrix.png" alt="Confusion Matrix"
+                                        id="chart-cm"
+                                        onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'chart-error\'><i class=\'ph ph-warning-circle\'></i><p>Confusion matrix not available yet.</p></div>';">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
