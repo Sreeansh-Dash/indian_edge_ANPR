@@ -6,7 +6,9 @@ from ultralytics import YOLO
 
 # Initialize EasyOCR Reader (English, using CPU or GPU as available)
 print("Initializing EasyOCR reader...")
-reader = easyocr.Reader(['en'], gpu=False) # Fallback to CPU to avoid CUDA OOM if YOLO uses GPU
+ocr_cache_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'models', 'easyocr')
+os.makedirs(ocr_cache_dir, exist_ok=True)
+reader = easyocr.Reader(['en'], gpu=False, model_storage_directory=ocr_cache_dir) # Fallback to CPU to avoid CUDA OOM if YOLO uses GPU
 
 # Load trained YOLOv8 model
 model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'models', 'plate_detector.pt')
