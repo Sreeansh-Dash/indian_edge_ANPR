@@ -1,35 +1,82 @@
-# Real-time Indian ANPR Edge System
+# NeuralPlate | Real-time Indian ANPR Edge System
 
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-green.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Framework-teal)
 
-A high-performance, real-time Automatic Number Plate Recognition (ANPR) system optimized for edge devices. This system utilizes a lightweight YOLOv8-nano model to detect Indian license plates, processes the crops using EasyOCR for text extraction, and uses a hardcoded ruleset to determine the Indian state based on the first two alphanumeric characters.
+## Executive Summary
 
-## Features
+**NeuralPlate** is a high-performance, real-time Automatic Number Plate Recognition (ANPR) system specifically engineered for Indian license plates and optimized for edge deployment. The system combines modern deep learning (YOLOv8) for object detection with robust OCR (EasyOCR) and a custom regional recognition engine.
 
-- **Edge Deployment Optimized**: Uses `yolov8n.pt` and `EasyOCR` on CPU for maximum compatibility across devices without heavy GPUs.
-- **Real-time Processing**: Stream video directly from a camera to the backend API via HTTP.
-- **State Recognition**: Hardcoded Indian regional RTO codes recognize the state of registration (e.g. `DL` -> Delhi, `MH` -> Maharashtra).
-- **Premium Web UI**: Responsive, dark-mode glassmorphism interface built with vanilla HTML/CSS/JS.
+### Key Highlights
+- **Edge Efficiency**: Designed to run on consumer-grade CPUs with ~600-900ms latency, making it ideal for standard workstations and edge gateways.
+- **Region Intelligence**: Automatically identifies the Indian state/union territory (e.g., `DL` → Delhi, `KA` → Karnataka) using hardcoded RTO logic.
+- **Premium Interface**: A glassmorphism dashboard providing real-time visual feedback, bounding boxes, and performance analytics.
+
+---
+
+## File-by-File Documentation
+
+### 🚀 Backend Components (`/src`)
+
+#### [`app.py`](file:///c:/Users/Sreeansh%20Dash/OneDrive/Desktop/Projects/ai%20proj/src/app.py) - The API Gateway
+- **Purpose**: Serves as the interface between the AI models and the web dashboard.
+- **Key Logic**: 
+    - Uses **FastAPI** to handle asynchronous image uploads via the `/detect` endpoint.
+    - Mounts the `/docs` directory as a static file server to display training charts in the UI.
+    - Orchestrates the call to the inference module and returns structured JSON responses (Bounding boxes, Text, State).
+
+#### [`inference.py`](file:///c:/Users/Sreeansh%20Dash/OneDrive/Desktop/Projects/ai%20proj/src/inference.py) - The Intelligence Engine
+- **Purpose**: The core pipeline that transforms raw pixels into text and state information.
+- **Key Logic**:
+    - **Plate Detection**: Uses `yolov8n.pt` (Nano) to locate Indian license plates within an image.
+    - **Preprocessing**: Crops detected plates and applies Grayscale + Otsu's Thresholding to improve OCR accuracy.
+    - **OCR**: Uses **EasyOCR** (English) to read the alphanumeric characters.
+    - **State Check**: Maps the first two characters of the plate to a dictionary of 30+ Indian states/UTs.
+
+#### [`train.py`](file:///c:/Users/Sreeansh%20Dash/OneDrive/Desktop/Projects/ai%20proj/src/train.py) - Model Training Pipeline
+- **Purpose**: Automates the fine-tuning of YOLOv8 for specific license plate datasets.
+- **Key Logic**:
+    - Configures training parameters (epochs, image size) and stores results in `/runs`.
+    - Automatically exports the best-performing weights (`best.pt`) to the `/models` folder.
+    - Generates and saves performance visualizations (Metrics & Confusion Matrix) to `/docs` for the dashboard.
+
+#### [`data_prep.py`](file:///c:/Users/Sreeansh%20Dash/OneDrive/Desktop/Projects/ai%20proj/src/data_prep.py) - Dataset Preprocessing
+- **Purpose**: Prepares raw datasets for YOLOv8 training.
+- **Key Logic**:
+    - Parses **PASCAL VOC XML** annotations and converts them to the normalized **YOLO .txt format**.
+    - Implements an 80/20 train-validation split.
+    - Generates the `data.yaml` configuration file required by the Ultralytics framework.
+
+### 🎨 Frontend Components (`/web`)
+
+#### [`index.html`](file:///c:/Users/Sreeansh%20Dash/OneDrive/Desktop/Projects/ai%20proj/web/index.html) - Dashboard Structure
+- A responsive, glassmorphism-themed UI structure.
+- Features a dual-view system: **Live Inference** (interactive workspace) and **Model Analytics** (training metrics).
+- Uses Google Fonts (Outfit) and Phosphor Icons for a premium aesthetic.
+
+#### [`script.js`](file:///c:/Users/Sreeansh%20Dash/OneDrive/Desktop/Projects/ai%20proj/web/script.js) - Interface Logic
+- Handles the **Webcam Stream** (captured at 1 FPS to balance load) and **Drag-and-Drop** file uploads.
+- Communicates with the FastAPI backend using `fetch` API.
+- Dynamically draws bounding boxes and text labels on a `<canvas>` overlay.
+
+#### [`style.css`](file:///c:/Users/Sreeansh%20Dash/OneDrive/Desktop/Projects/ai%20proj/web/style.css) - Design System
+- Implements a futuristic dark theme using HSL color tokens.
+- Defines glassmorphism effects (`backdrop-filter`) and smooth micro-animations for card entries.
+
+---
 
 ## Project Structure
 
 ```text
 /
-├── src/
-│   ├── data_prep.py     # Parses PASCAL VOC XML from @license_plates to YOLO txt
-│   ├── train.py         # YOLOv8-nano training pipeline
-│   ├── inference.py     # Inference pipeline (YOLO detect -> Crop -> EasyOCR -> State Check)
-│   └── app.py           # FastAPI Web Server
-├── models/              # Contains the exported edge weights (`plate_detector.pt`)
-├── data/                # Processed train/validation splits for YOLO
-├── web/                 
-│   ├── index.html       # Web UI
-│   ├── style.css        
-│   └── script.js        
-├── docs/                # YOLO training performance metrics & graphs
-└── requirements.txt     # Python dependencies
+├── src/                 # System logic & API
+├── models/              # Exported AI weights (plate_detector.pt)
+├── data/                # Processed YOLO dataset (images/labels)
+├── web/                 # Dashboard source code (HTML/CSS/JS)
+├── docs/                # Auto-generated training graphs & metrics
+├── license_plates/      # Raw raw dataset (XML/Images)
+└── requirements.txt     # Environment dependencies
 ```
 
 ## Setup Instructions

@@ -1,4 +1,4 @@
-const API_URL = 'https://indian-edge-anpr.onrender.com';
+const API_URL = 'http://127.0.0.1:8000';
 
 const uploadZone = document.getElementById('upload-zone');
 const imageUpload = document.getElementById('image-upload');
