@@ -44,10 +44,10 @@ window.refreshCharts = function () {
     const cm = document.getElementById('chart-cm');
     const timestamp = new Date().getTime();
 
-    if (metrics && metrics.tagName === 'IMG') {
+    if (metrics) {
         metrics.src = `${API_URL}/charts/training_metrics.png?t=${timestamp}`;
     }
-    if (cm && cm.tagName === 'IMG') {
+    if (cm) {
         cm.src = `${API_URL}/charts/confusion_matrix.png?t=${timestamp}`;
     }
 };
@@ -111,15 +111,15 @@ function drawImageToCanvas(img) {
     const maxWidth = canvas.parentElement.clientWidth;
     const maxHeight = canvas.parentElement.clientHeight;
 
-    let w = img.width;
-    let h = img.height;
+    let w = img.videoWidth || img.width;
+    let h = img.videoHeight || img.height;
 
     // Scale down if larger
-    if (w > maxWidth) {
+    if (w > maxWidth && maxWidth > 0) {
         h = h * (maxWidth / w);
         w = maxWidth;
     }
-    if (h > maxHeight) {
+    if (h > maxHeight && maxHeight > 0) {
         w = w * (maxHeight / h);
         h = maxHeight;
     }
@@ -128,7 +128,7 @@ function drawImageToCanvas(img) {
     canvas.height = h;
     ctx.drawImage(img, 0, 0, w, h);
 
-    return { w, h, origW: img.width, origH: img.height };
+    return { w, h, origW: img.videoWidth || img.width, origH: img.videoHeight || img.height };
 }
 
 function processImageFile(file) {
@@ -285,9 +285,10 @@ async function startCamera() {
         stopCameraBtn.disabled = false;
         isStreaming = true;
 
-        video.onloadedmetadata = () => {
+        video.onloadedmetadata = async () => {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
+            await video.play();
             // Frame capture loop
             inferenceInterval = setInterval(captureAndSend, 1000); // 1 FPS for server load
         };
