@@ -81,7 +81,8 @@
                 <h2>Workspace</h2>
                 <div class="badges">
                     <span class="badge ai-badge"><i class="ph-fill ph-lightning"></i> YOLOv8-nano EDGE</span>
-                    <span class="badge ocr-badge"><i class="ph-fill ph-text-aa"></i> EasyOCR Engine</span>
+                    <span class="badge ocr-badge"><i class="ph-fill ph-text-aa"></i> Multi-Pass OCR</span>
+                    <span class="badge valid-badge"><i class="ph-fill ph-shield-check"></i> RTO Validator</span>
                 </div>
             </header>
 
@@ -122,6 +123,23 @@
                             <div class="empty-state">
                                 <i class="ph ph-car"></i>
                                 <p>No vehicles detected yet</p>
+                            </div>
+                        </div>
+
+                        <!-- History Panel (Novelty 4) -->
+                        <div class="panel-header history-header">
+                            <div class="header-title">
+                                <i class="ph ph-clock-counter-clockwise"></i>
+                                <h3>Session History</h3>
+                            </div>
+                            <button class="clear-history-btn" id="clear-history-btn" title="Clear history">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        </div>
+                        <div class="history-list" id="history-list">
+                            <div class="empty-state history-empty">
+                                <i class="ph ph-clock"></i>
+                                <p>No history yet</p>
                             </div>
                         </div>
                     </div>

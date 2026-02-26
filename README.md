@@ -10,8 +10,11 @@
 
 ### Key Highlights
 - **Edge Efficiency**: Designed to run on consumer-grade CPUs with ~600-900ms latency, making it ideal for standard workstations and edge gateways.
-- **Region Intelligence**: Automatically identifies the Indian state/union territory (e.g., `DL` → Delhi, `KA` → Karnataka) using hardcoded RTO logic.
-- **Premium Interface**: A glassmorphism dashboard providing real-time visual feedback, bounding boxes, and performance analytics.
+- **Adaptive Multi-Stage Preprocessing**: Generates multiple image variants (CLAHE, Denoising, Adaptive Thresholding) to dynamically handle poor lighting and motion blur.
+- **Multi-Pass OCR Voting**: Fault-tolerant text extraction that re-runs OCR on alternate image variants if confidence drops below 70%, voting on the best outcome.
+- **RTO Format Validator**: A dedicated rule engine that validates extracted text against structural grammar (e.g., `MH12AB1234`) and flags invalid/partial reads.
+- **Detection History Log**: In-memory rolling audit trail of the session's detections with a live frontend feed via the `/history` endpoint.
+- **Premium Interface**: A glassmorphism dashboard providing real-time visual feedback, bounding boxes, OCR confidence, plate validity badges, and performance analytics.
 
 ---
 
@@ -23,16 +26,25 @@
 - **Purpose**: Serves as the interface between the AI models and the web dashboard.
 - **Key Logic**: 
     - Uses **FastAPI** to handle asynchronous image uploads via the `/detect` endpoint.
-    - Mounts the `/docs` directory as a static file server to display training charts in the UI.
-    - Orchestrates the call to the inference module and returns structured JSON responses (Bounding boxes, Text, State).
+    - Exposes a `/history` endpoint (GET/DELETE) to serve the in-memory session detection log.
+    - Orchestrates the call to the inference module, validity engine, and log manager.
+    - Returns structured JSON responses (Bounding boxes, Text, State, OCR Confidence, Validity).
 
 #### [`inference.py`](file:///c:/Users/Sreeansh%20Dash/OneDrive/Desktop/Projects/ai%20proj/src/inference.py) - The Intelligence Engine
 - **Purpose**: The core pipeline that transforms raw pixels into text and state information.
 - **Key Logic**:
     - **Plate Detection**: Uses `yolov8n.pt` (Nano) to locate Indian license plates within an image.
-    - **Preprocessing**: Crops detected plates and applies Grayscale + Otsu's Thresholding to improve OCR accuracy.
-    - **OCR**: Uses **EasyOCR** (English) to read the alphanumeric characters.
-    - **State Check**: Maps the first two characters of the plate to a dictionary of 30+ Indian states/UTs.
+    - **Adaptive Preprocessing**: Generates up to 4 enhanced variants (CLAHE, Denoising, etc.) of the plate crop.
+    - **Multi-Pass OCR Voting**: Uses **EasyOCR** (English) across the variants and selects the read with the highest confidence.
+    - **State Check**: Maps the first two characters of the plate to a dictionary of 35+ Indian states/UTs.
+
+#### [`validator.py`](file:///c:/Users/Sreeansh%20Dash/OneDrive/Desktop/Projects/ai%20proj/src/validator.py) - RTO Format Validator *(Novelty)*
+- **Purpose**: Validates the structural grammar of the extracted plate text.
+- **Key Logic**: Checks text against regex rules for Standard (e.g., MH12AB1234), Short, and BH-series Indian plates. Returns `VALID`, `PARTIAL`, or `INVALID`.
+
+#### [`log_manager.py`](file:///c:/Users/Sreeansh%20Dash/OneDrive/Desktop/Projects/ai%20proj/src/log_manager.py) - Memory Log *(Novelty)*
+- **Purpose**: Maintains a thread-safe circular buffer for the active detection session.
+- **Key Logic**: Stores up to 50 of the most recent detections, recording timestamp, plate text, state, and validity for the frontend history feed.
 
 #### [`train.py`](file:///c:/Users/Sreeansh%20Dash/OneDrive/Desktop/Projects/ai%20proj/src/train.py) - Model Training Pipeline
 - **Purpose**: Automates the fine-tuning of YOLOv8 for specific license plate datasets.
@@ -52,13 +64,14 @@
 
 #### [`index.html`](file:///c:/Users/Sreeansh%20Dash/OneDrive/Desktop/Projects/ai%20proj/web/index.html) - Dashboard Structure
 - A responsive, glassmorphism-themed UI structure.
-- Features a dual-view system: **Live Inference** (interactive workspace) and **Model Analytics** (training metrics).
+- Features dual-views: **Live Inference** (interactive workspace with a real-time Session History panel) and **Model Analytics** (training metrics).
 - Uses Google Fonts (Outfit) and Phosphor Icons for a premium aesthetic.
 
 #### [`script.js`](file:///c:/Users/Sreeansh%20Dash/OneDrive/Desktop/Projects/ai%20proj/web/script.js) - Interface Logic
-- Handles the **Webcam Stream** (captured at 1 FPS to balance load) and **Drag-and-Drop** file uploads.
-- Communicates with the FastAPI backend using `fetch` API.
+- Handles the **Webcam Stream** (1 FPS) and **Drag-and-Drop** file uploads.
+- Communicates with the FastAPI backend endpoints (`/detect`, `/history`) via `fetch`.
 - Dynamically draws bounding boxes and text labels on a `<canvas>` overlay.
+- Renders the color-coded validity badges and live history feed.
 
 #### [`style.css`](file:///c:/Users/Sreeansh%20Dash/OneDrive/Desktop/Projects/ai%20proj/web/style.css) - Design System
 - Implements a futuristic dark theme using HSL color tokens.

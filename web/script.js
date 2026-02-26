@@ -206,8 +206,39 @@ function updateResultsSidebar(plates) {
 
     plates.forEach(plate => {
         const conf = Math.round(plate.confidence * 100);
+        const ocrConf = plate.ocr_confidence !== undefined
+            ? Math.round(plate.ocr_confidence * 100)
+            : null;
+        const validity = plate.validity || 'UNKNOWN';
+
+        // Validity badge class mapping
+        const badgeClass = {
+            'VALID': 'validity-valid',
+            'PARTIAL': 'validity-partial',
+            'INVALID': 'validity-invalid'
+        }[validity] || 'validity-unknown';
+
+        const badgeIcon = {
+            'VALID': 'ph-shield-check',
+            'PARTIAL': 'ph-shield-warning',
+            'INVALID': 'ph-shield-slash'
+        }[validity] || 'ph-question';
+
+        const ocrRow = ocrConf !== null ? `
+            <div class="detail-row">
+                <span class="detail-label"><i class="ph ph-text-aa"></i> OCR Conf.</span>
+                <span class="conf-text">${ocrConf}%</span>
+            </div>` : '';
+
         const html = `
             <div class="detection-card">
+                <div class="validity-strip ${badgeClass}">
+                    <i class="ph ${badgeIcon}"></i>
+                    <span>${validity}</span>
+                    <span class="validity-detail" title="${plate.validity_details || ''}">
+                        ${plate.validity_details ? plate.validity_details.slice(0, 38) + (plate.validity_details.length > 38 ? '…' : '') : ''}
+                    </span>
+                </div>
                 <div class="detection-details">
                     <div class="detail-row">
                         <span class="detail-label"><i class="ph ph-hash"></i> Registration</span>
@@ -218,9 +249,10 @@ function updateResultsSidebar(plates) {
                         <span class="state-text">${plate.state}</span>
                     </div>
                     <div class="detail-row">
-                        <span class="detail-label"><i class="ph ph-target"></i> Model Cond.</span>
+                        <span class="detail-label"><i class="ph ph-target"></i> YOLO Conf.</span>
                         <span class="conf-text">${conf}%</span>
                     </div>
+                    ${ocrRow}
                 </div>
             </div>
         `;
@@ -330,3 +362,75 @@ function captureAndSend() {
 
 startCameraBtn.addEventListener('click', startCamera);
 stopCameraBtn.addEventListener('click', stopCamera);
+
+// ── History Panel (Novelty 4) ────────────────────────────────────────────────
+
+const historyList = document.getElementById('history-list');
+const clearHistoryBtn = document.getElementById('clear-history-btn');
+
+function formatTimestamp(isoString) {
+    try {
+        const d = new Date(isoString);
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch {
+        return isoString;
+    }
+}
+
+async function loadHistory() {
+    try {
+        const res = await fetch(`${API_URL}/history?limit=20`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        if (!data.entries || data.entries.length === 0) {
+            historyList.innerHTML = `
+                <div class="empty-state history-empty">
+                    <i class="ph ph-clock"></i>
+                    <p>No history yet</p>
+                </div>`;
+            return;
+        }
+
+        historyList.innerHTML = '';
+        data.entries.forEach(entry => {
+            const badgeClass = {
+                'VALID': 'validity-valid',
+                'PARTIAL': 'validity-partial',
+                'INVALID': 'validity-invalid'
+            }[entry.validity] || 'validity-unknown';
+
+            const html = `
+                <div class="history-entry">
+                    <div class="history-top">
+                        <span class="history-plate">${entry.plate_text || 'UNKNOWN'}</span>
+                        <span class="history-badge ${badgeClass}">${entry.validity}</span>
+                    </div>
+                    <div class="history-meta">
+                        <span><i class="ph ph-map-pin"></i> ${entry.state}</span>
+                        <span><i class="ph ph-clock"></i> ${formatTimestamp(entry.timestamp)}</span>
+                    </div>
+                </div>`;
+            historyList.insertAdjacentHTML('beforeend', html);
+        });
+    } catch (e) {
+        // Server may be offline, silently ignore
+    }
+}
+
+// Poll history every 5 seconds
+setInterval(loadHistory, 5000);
+loadHistory(); // Initial load
+
+clearHistoryBtn.addEventListener('click', async () => {
+    try {
+        await fetch(`${API_URL}/history`, { method: 'DELETE' });
+        historyList.innerHTML = `
+            <div class="empty-state history-empty">
+                <i class="ph ph-clock"></i>
+                <p>No history yet</p>
+            </div>`;
+    } catch (e) {
+        console.error('Could not clear history:', e);
+    }
+});
